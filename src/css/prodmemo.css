@@ -1,0 +1,204 @@
+/* ProdMemo Styles - 整合自 ProdMemo 插件 */
+
+/* 详情页卡片样式 */
+.prod-memo-card {
+    background: #000000;
+    border: 1px solid #333;
+    border-left: 4px solid #00dbb5;
+    border-radius: 4px;
+    margin-top: 15px;
+    padding: 16px;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #f0f0f0;
+    width: 100%;
+    max-width: none;
+    animation: memoFadeIn 0.4s ease-out;
+    position: relative;
+    z-index: 1000;
+}
+
+@keyframes memoFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header Section */
+.memo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.memo-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.memo-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #00dbb5;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.memo-badge {
+    background: rgba(0, 219, 181, 0.2);
+    color: #00dbb5;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.memo-time {
+    font-size: 12px;
+    color: #fff;
+}
+
+/* Stats Section */
+.memo-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.stat-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #fff;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.stat-value.positive {
+    color: #00dbb5;
+}
+
+.stat-value.negative {
+    color: #ff4757;
+}
+.prod-corr-replaced{
+    font-family: Open Sans, Verdana, sans-serif;
+    /* font-size: .75rem; */
+    font-stretch: normal;
+    font-style: normal;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: normal;
+    line-height: normal;
+    text-align: center;
+}
+
+.prod-corr-replaced span{
+    padding-right: 4px;
+}
+/* 列表视图样式 */
+.prod-corr-header {
+    color: #333;
+    font-size: 12px;
+}
+
+
+.high-corr {
+    color: #e74c3c !important;
+}
+
+.medium-corr {
+    color: #f39c12 !important;
+}
+
+.low-corr {
+    color: #27ae60 !important;
+}
+
+.pass-color {
+    color: #27ae60 !important;
+}
+
+.fail-color {
+    color: #e74c3c !important;
+}
+
+/* IS Check 图标样式 */
+.is-check-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-top: 9px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+}
+
+/* Multiplier 徽章样式 */
+.multiplier-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    margin-top: 9px;
+    background: #3498db;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: cursor;
+}
+
+/* Operator Count 徽章样式 */
+.operator-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    margin-top: 9px;
+    background: #9b59b6;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: cursor;
+}
+
+.is-check-icon.is-pass {
+    background: #27ae60;
+}
+
+.is-check-icon.is-fail {
+    background: #e74c3c;
+}
+
+.is-check-icon.is-unknown {
+    background: #7f8c8d;
+}
+
+/* 隐藏 code-btn 的背景图片 */
+.alphas-list-table__clickable-icon.code-btn {
+    background-image: none !important;
+}

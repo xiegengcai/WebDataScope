@@ -88,6 +88,8 @@ chrome.webNavigation.onCommitted.addListener((details) => {
     // 只处理顶层主框架，忽略 iframe
     if (details.frameId !== 0) return;
     if (!details.url || !details.url.includes('platform.worldquantbrain.com')) return;
+    // 排除 genius 页面，避免干扰 genius 功能
+    if (details.url.includes('/genius')) return;
     injectFetchInterceptor(details.tabId);
 }, { url: [{ hostContains: 'platform.worldquantbrain.com' }] });
 
@@ -113,7 +115,7 @@ function injectFetchInterceptor(tabId) {
 
                     "LOW_ROBUST_UNIVERSE_RETURNS", 
                     "CONCENTRATED_WEIGHT",  
-                    
+                    "OLD_SIMULATION"                        
                 ]));
                 const PPA_CHECK_NAMES = Array.from(new Set([
                     'LOW_TURNOVER',
@@ -161,20 +163,104 @@ function injectFetchInterceptor(tabId) {
 
             const originalFetch = window.fetch;
             window.fetch = async function (...args) {
+                
                 const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
 
                 // 执行原始请求
                 const response = await originalFetch.apply(this, args);
+                // ========== ProdMemo 拦截逻辑 ==========
+                try {
+                    const responseUrl = response.url;
 
-                // 拦截并修改目标接口的响应
-                if (url && url.includes("https://api.worldquantbrain.com/users/self/alphas?")) {
+                    // 1. 拦截 Prod Correlation 数据
+                    if (responseUrl.includes('/correlations/prod')) {
+                        const prodMatch = responseUrl.match(/\/alphas\/([^/]+)\/correlations\/prod/);
+                        if (prodMatch && response.ok && response.status !== 204) {
+                            const alphaId = prodMatch[1];
+                            const clone = response.clone();
+                            clone.text().then(text => {
+                                if (!text) return;
+                                try {
+                                    const data = JSON.parse(text);
+                                    window.postMessage({
+                                        type: 'WQSCOPE_PRODMEMO_DATA',
+                                        alphaId: alphaId,
+                                        data: data
+                                    }, '*');
+                                } catch (parseErr) {}
+                            }).catch(() => {});
+                        }
+                    }
+
+                    // 2. 拦截 Alpha Page Load (Recordsets) 触发 UI 检查
+                    const recordsetsMatch = responseUrl.match(/\/alphas\/([^/]+)\/recordsets(?:[?#]|$)/);
+                    if (recordsetsMatch) {
+                        const alphaId = recordsetsMatch[1];
+                        window.postMessage({
+                            type: 'WQSCOPE_PRODMEMO_VIEW',
+                            alphaId: alphaId
+                        }, '*');
+                    }
+
+                } catch (e) {}
+                // ========== ProdMemo 拦截逻辑结束 ==========
+
+                // 拦截并修改 /users/self/alphas 接口响应，同时发送 ProdMemo 列表数据
+                if (url && url.includes("https://api.worldquantbrain.com/users/self/alphas") && !url.includes('/alphas/')) {
                     try {
                         const clone = response.clone();
                         let originalData = await clone.json();
 
-                        // 👉 自定义你的修改逻辑
+                        // 👉 自定义你的修改逻辑（先执行，确保 failedNumRA/PPA 被计算）
                         const modifiedData = getAlphaCheckStates(originalData);
                         console.log('拦截并修改了 alphas 响应：', modifiedData);
+
+                        // 发送 ProdMemo 列表数据（在 getAlphaCheckStates 之后，从 modifiedData 获取数据）
+                        if (response.ok && response.status !== 204 && modifiedData.results && Array.isArray(modifiedData.results)) {
+                            const alphaIds = modifiedData.results.map(r => r.id);
+                            const isDataMap = {};
+                            modifiedData.results.forEach(alpha => {
+                                const alphaId = alpha.id;
+                                let isPassed = null;
+                                let multiplier = null;
+                                let pyramids = [];
+                                let failedNumRA = 0;
+                                let failedNumPPA = 0;
+                                let operatorCount = null;
+
+                                if (alpha.is && alpha.is.checks) {
+                                    const checks = alpha.is.checks;
+                                    const hasFail = checks.some(c => c?.result === 'FAIL');
+                                    isPassed = !hasFail;
+
+                                    const pyramidCheck = checks.find(c => c && c.name === 'MATCHES_PYRAMID');
+                                    if (pyramidCheck) {
+                                        multiplier = pyramidCheck.multiplier;
+                                        if (pyramidCheck.pyramids && Array.isArray(pyramidCheck.pyramids)) {
+                                            pyramids = pyramidCheck.pyramids.map(p => {
+                                                const nameParts = p.name.split('/');
+                                                return nameParts[nameParts.length - 1].toLowerCase();
+                                            });
+                                        }
+                                    }
+
+                                    // 获取 failedNumRA 和 failedNumPPA（现在已经被 getAlphaCheckStates 计算好了）
+                                    failedNumRA = alpha.is.failedNumRA || 0;
+                                    failedNumPPA = alpha.is.failedNumPPA || 0;
+                                }
+
+                                // 获取 operatorCount（注意：0 是有效值，不能用 ||）
+                                operatorCount = alpha.regular?.operatorCount ?? null;
+
+                                isDataMap[alphaId] = { isPassed, multiplier, pyramids: pyramids.join(','), failedNumRA, failedNumPPA, operatorCount };
+                            });
+
+                            window.postMessage({
+                                type: 'WQSCOPE_PRODMEMO_LIST',
+                                alphaIds: alphaIds,
+                                isDataMap: isDataMap
+                            }, '*');
+                        }
                         
                         // 构造新 Response 返回给前端
                         return new Response(JSON.stringify(modifiedData), {

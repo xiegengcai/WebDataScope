@@ -50,6 +50,20 @@
             <button id="importCommunityBtn" type="button" style="background-color:#6c757d;">导入</button>
             <input id="importCommunityFile" type="file" accept="application/json,.json,.wqcs" style="display:none;" />
         </div>
+        <h2 style="margin-top:16px;text-align:left;">Prod Correlation 缓存</h2>
+        <div class="input-group">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span>已缓存 Alpha 数量:</span>
+                <span id="prodmemo-count" style="font-weight:bold;color:#00dbb5;">0</span>
+            </div>
+            <div class="btn-row" style="width:100%">
+                <button id="exportProdMemoBtn" type="button">导出缓存</button>
+                <button id="clearProdMemoBtn" type="button" style="background-color:#dc3545;">清空缓存</button>
+            </div>
+            <button id="importProdMemoBtn" type="button" style="background-color:#6c757d;width:100%;margin-top:8px;">导入缓存</button>
+            <input id="importProdMemoFile" type="file" accept="application/json,.json" style="display:none;" />
+        </div>
+
         <p id="status" aria-live="polite"></p>
     </div>
     <script src="popup.js"></script>

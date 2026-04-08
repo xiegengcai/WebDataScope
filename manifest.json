@@ -75,6 +75,20 @@
             "js": [
                 "src/scripts/alphaDetailsPopup.js"
             ]
+        },
+        {
+            "matches": [
+                "*://platform.worldquantbrain.com/alpha/*",
+                "*://platform.worldquantbrain.com/alphas/*",
+                "*://platform.worldquantbrain.com/simulate*"
+            ],
+            "js": [
+                "src/scripts/prodmemo/prodmemo-content.js"
+            ],
+            "css": [
+                "src/css/prodmemo.css"
+            ],
+            "run_at": "document_start"
         }
     ],
     "web_accessible_resources": [
