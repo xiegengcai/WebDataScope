@@ -4,6 +4,7 @@ import '../shared/dataStore.js';
 import { ensureDefaultSettings } from './services/settingsService.js';
 import './services/sidebarMessageRouter.js';
 import { initSessionKeeperService } from './services/sessionKeeperService.js';
+import { initTelemetryService } from './services/telemetryService.js';
 
 const DATA_SET_LIST_PATH = 'dataSetList.json';
 const PATHS = {
@@ -169,6 +170,7 @@ chrome.runtime.onStartup.addListener(() => {
 
 configureSidePanel();
 initSessionKeeperService();
+initTelemetryService();
 
 
 

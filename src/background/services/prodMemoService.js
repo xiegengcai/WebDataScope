@@ -1,8 +1,8 @@
 ﻿const STORAGE_PREFIX = 'WQP_ProdMemo_';
 
-function getAllLocal() {
+function getLocal(keys) {
     return new Promise((resolve, reject) => {
-        chrome.storage.local.get(null, (items) => {
+        chrome.storage.local.get(keys, (items) => {
             if (chrome.runtime.lastError) {
                 reject(chrome.runtime.lastError);
                 return;
@@ -10,6 +10,25 @@ function getAllLocal() {
             resolve(items || {});
         });
     });
+}
+
+async function getLocalKeys() {
+    if (typeof chrome.storage.local.getKeys === 'function') {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.getKeys((keys) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+                resolve(Array.isArray(keys) ? keys : []);
+            });
+        });
+    }
+    return Object.keys(await getLocal(null));
+}
+
+async function getMemoKeys() {
+    return (await getLocalKeys()).filter((key) => key.startsWith(STORAGE_PREFIX));
 }
 
 function setLocal(values) {
@@ -55,7 +74,8 @@ function normalizeMemo(value) {
 }
 
 export async function getProdMemoCache() {
-    const all = await getAllLocal();
+    const keys = await getMemoKeys();
+    const all = keys.length ? await getLocal(keys) : {};
     const memoData = {};
     Object.entries(all).forEach(([key, value]) => {
         if (!key.startsWith(STORAGE_PREFIX)) return;
@@ -64,7 +84,7 @@ export async function getProdMemoCache() {
         memoData[alphaId] = value;
     });
     return {
-        count: Object.keys(memoData).length,
+        count: keys.length,
         memoData,
     };
 }
@@ -95,13 +115,12 @@ export async function importProdMemoCache(importedData) {
     return {
         imported,
         skipped,
-        count: (await getProdMemoCache()).count,
+        count: (await getMemoKeys()).length,
     };
 }
 
 export async function clearProdMemoCache() {
-    const all = await getAllLocal();
-    const keys = Object.keys(all).filter((key) => key.startsWith(STORAGE_PREFIX));
+    const keys = await getMemoKeys();
     if (keys.length > 0) {
         await removeLocal(keys);
     }
@@ -118,8 +137,8 @@ export async function deleteProdMemoCache(alphaId) {
     }
 
     const key = `${STORAGE_PREFIX}${normalizedId}`;
-    const all = await getAllLocal();
-    const existed = Object.prototype.hasOwnProperty.call(all, key);
+    const stored = await getLocal(key);
+    const existed = Object.prototype.hasOwnProperty.call(stored, key);
     if (existed) {
         await removeLocal([key]);
     }
@@ -127,6 +146,6 @@ export async function deleteProdMemoCache(alphaId) {
     return {
         alphaId: normalizedId,
         deleted: existed ? 1 : 0,
-        count: (await getProdMemoCache()).count,
+        count: (await getMemoKeys()).length,
     };
 }

@@ -1,6 +1,12 @@
-﻿import { getLocalValue, setLocalValue } from './storageService.js';
-import { getSettings, saveSettings } from './settingsService.js';
-import { runCommunityAction } from './supportCommunityService.js';
+﻿import { getSettings, saveSettings } from './settingsService.js';
+import { generateAlphaDescriptionWithAi } from './alphaDescriptionService.js';
+import {
+    getCommunityPostMarkers,
+    listCommunityFavoritePosts,
+    markCommunityPostRead,
+    setCommunityPostFavorite,
+} from './communityPostMarkerService.js';
+import { getLlmConfig, saveLlmConfig } from './llmService.js';
 import {
     clearProdMemoCache,
     deleteProdMemoCache,
@@ -15,6 +21,7 @@ import {
     saveSessionKeeperConfig,
     triggerAutoLogin,
 } from './sessionKeeperService.js';
+import { runCommunityAction } from './supportCommunityService.js';
 
 function respond(sendResponse, promise) {
     promise
@@ -63,10 +70,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return respond(sendResponse, deleteProdMemoCache(msg.alphaId));
     }
     if (msg.type === 'WQP_LLM_CONFIG_GET') {
-        return respond(sendResponse, runCommunityAction('LLM_CONFIG_GET'));
+        return respond(sendResponse, getLlmConfig());
     }
     if (msg.type === 'WQP_LLM_CONFIG_SAVE') {
-        return respond(sendResponse, runCommunityAction('LLM_CONFIG_SAVE', { config: msg.config }));
+        return respond(sendResponse, saveLlmConfig(msg.config));
+    }
+    if (msg.type === 'WQP_ALPHA_AI_GENERATE_DESCRIPTION') {
+        return respond(sendResponse, generateAlphaDescriptionWithAi({
+            alphaId: msg.alphaId,
+            alphaType: msg.alphaType,
+            expression: msg.expression,
+            settings: msg.settings,
+            fields: msg.fields,
+            existingDescription: msg.existingDescription,
+            selectionExpression: msg.selectionExpression,
+            comboExpression: msg.comboExpression,
+            existingSelectionDescription: msg.existingSelectionDescription,
+            existingComboDescription: msg.existingComboDescription,
+            selectedAlphaCount: msg.selectedAlphaCount,
+        }));
     }
     if (msg.type === 'WQP_COMMUNITY_AI_SUMMARIZE_POST') {
         return respond(sendResponse, runCommunityAction('AI_SUMMARIZE_POST', {
@@ -79,6 +101,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return respond(sendResponse, runCommunityAction('AI_GET_CACHED_SUMMARY', {
             postUrl: msg.postUrl,
             postId: msg.postId,
+        }));
+    }
+    if (msg.type === 'WQP_COMMUNITY_AI_GET_POST_STATUSES') {
+        return respond(sendResponse, runCommunityAction('AI_GET_POST_STATUSES', {
+            postIds: msg.postIds,
         }));
     }
     if (msg.type === 'WQP_COMMUNITY_AI_DRAFT_COMMENT') {
@@ -94,6 +121,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             postId: msg.postId,
             commentText: msg.commentText,
             commentHtml: msg.commentHtml,
+        }));
+    }
+    if (msg.type === 'WQP_COMMUNITY_POST_MARKERS_GET') {
+        return respond(sendResponse, getCommunityPostMarkers({
+            postIds: msg.postIds,
+        }));
+    }
+    if (msg.type === 'WQP_COMMUNITY_POST_FAVORITES_GET') {
+        return respond(sendResponse, listCommunityFavoritePosts());
+    }
+    if (msg.type === 'WQP_COMMUNITY_POST_MARK_READ') {
+        return respond(sendResponse, markCommunityPostRead({
+            postId: msg.postId,
+            postUrl: msg.postUrl,
+            title: msg.title,
+            postDate: msg.postDate,
+        }));
+    }
+    if (msg.type === 'WQP_COMMUNITY_POST_FAVORITE_SET') {
+        return respond(sendResponse, setCommunityPostFavorite({
+            postId: msg.postId,
+            postUrl: msg.postUrl,
+            title: msg.title,
+            postDate: msg.postDate,
+            favorite: msg.favorite,
         }));
     }
 
