@@ -51,9 +51,17 @@
         const wqppys = checks.WQPPYS || '-';
         const raw = checks.maxProdCorr;
         const prodCorrNum = raw !== null && raw !== undefined && raw !== '' ? Number(raw) : NaN;
-        const prodCorr = Number.isFinite(prodCorrNum) ? (Math.trunc(prodCorrNum * 100) / 100).toString() : '-';
+        const prodCorr = Number.isFinite(prodCorrNum) ? (Math.trunc(prodCorrNum * 100) / 100).toString() : '';
         const color = prodCorrColor(prodCorr);
-        cell.innerHTML = `${wqppys} <span style="color:${color};font-weight:600;">${prodCorr}</span>`;
+        if (wqppys == '-' ) {
+            cell.innerHTML = `<span style="color:${color};font-weight:600;">${prodCorr}</span>`;
+
+        } else {
+            const pyramidCount = wqppys.split('/').filter(Boolean).length;
+            const overlay = `${pyramidCount ? pyramidCount + ' / ' : ''}${prodCorr}`;
+            cell.innerHTML = `<span style="text-align: left;color:${color};">${overlay}</span><br>${wqppys}`;
+        }
+        
     }
 
     function processRow(row) {
