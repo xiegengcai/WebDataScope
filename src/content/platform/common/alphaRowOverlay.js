@@ -55,11 +55,12 @@
         const color = prodCorrColor(prodCorr);
         if (wqppys == '-' ) {
             cell.innerHTML = `<span style="color:${color};font-weight:600;">${prodCorr}</span>`;
-
         } else {
             const pyramidCount = wqppys.split('/').filter(Boolean).length;
             const overlay = `${pyramidCount ? pyramidCount + ' / ' : ''}${prodCorr}`;
-            cell.innerHTML = `<span style="text-align: left;color:${color};">${overlay}</span><br>${wqppys}`;
+            cell.innerHTML = `${wqppys}<span style="position:absolute;top:-2px;left:8px;color:${color};font-weight:600;pointer-events:none;white-space:nowrap;">${overlay}</span>`;
+            cell.style.position = 'relative';
+            cell.style.textAlign = 'left';
         }
         
     }
