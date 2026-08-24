@@ -534,6 +534,30 @@ button.loading::before {
     text-align: center;
 }
 
+.prod-memo-load-more {
+    width: 100%;
+    min-height: 32px;
+    flex: 0 0 auto;
+}
+
+.cache-source-title {
+    margin-top: 8px;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.cache-source-title.is-platform {
+    color: #1d4ed8;
+}
+
+.cache-source-title.is-local {
+    color: #7e22ce;
+}
+
+#prodMemoStatus {
+    white-space: pre-line;
+}
+
 .favorite-post-list {
     display: flex;
     max-height: min(420px, 48vh);
@@ -757,6 +781,18 @@ button.loading::before {
     border-radius: inherit;
     background: var(--accent);
     transition: width 0.2s ease;
+}
+
+.pnl-share-progress {
+    margin-top: 10px;
+}
+
+.pnl-share-progress.is-complete .progress-fill {
+    background: var(--success);
+}
+
+.pnl-share-progress.is-error .progress-fill {
+    background: var(--error);
 }
 
 .log-list {

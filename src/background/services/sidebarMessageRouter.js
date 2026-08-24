@@ -9,9 +9,12 @@ import {
 import { getLlmConfig, saveLlmConfig } from './llmService.js';
 import {
     clearProdMemoCache,
+    clearProdMemoSyncData,
     deleteProdMemoCache,
+    exportProdMemoCache,
     getProdMemoCache,
     importProdMemoCache,
+    runProdMemoAction,
 } from './prodMemoService.js';
 import {
     clearSessionKeeperLogs,
@@ -22,6 +25,7 @@ import {
     triggerAutoLogin,
 } from './sessionKeeperService.js';
 import { runCommunityAction } from './supportCommunityService.js';
+import { downloadSharedData, getShareStatus, uploadSharedData } from './pnlShareService.js';
 
 function respond(sendResponse, promise) {
     promise
@@ -38,6 +42,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     if (msg.type === 'WQP_SETTINGS_SAVE') {
         return respond(sendResponse, saveSettings(msg.settings));
+    }
+    if (msg.type === 'WQP_PNL_SHARE_STATUS') {
+        return respond(sendResponse, getShareStatus());
+    }
+    if (msg.type === 'WQP_PNL_SHARE_UPLOAD') {
+        return respond(sendResponse, uploadSharedData());
+    }
+    if (msg.type === 'WQP_PNL_SHARE_DOWNLOAD') {
+        return respond(sendResponse, downloadSharedData());
     }
     if (msg.type === 'WQP_SESSION_GET') {
         return respond(sendResponse, getSessionKeeperState());
@@ -57,8 +70,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'WQP_SESSION_TOKEN_CAPTURED') {
         return respond(sendResponse, handleCapturedSessionToken(msg.token));
     }
-    if (msg.type === 'WQP_PRODMEMO_GET' || msg.type === 'WQP_PRODMEMO_EXPORT') {
+    if (msg.type === 'WQP_PRODMEMO_GET') {
         return respond(sendResponse, getProdMemoCache());
+    }
+    if (msg.type === 'WQP_PRODMEMO_EXPORT') {
+        return respond(sendResponse, exportProdMemoCache());
     }
     if (msg.type === 'WQP_PRODMEMO_IMPORT') {
         return respond(sendResponse, importProdMemoCache(msg.memoData));
@@ -66,8 +82,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'WQP_PRODMEMO_CLEAR') {
         return respond(sendResponse, clearProdMemoCache());
     }
+    if (msg.type === 'WQP_PRODMEMO_CLEAR_SYNC') {
+        return respond(sendResponse, clearProdMemoSyncData());
+    }
     if (msg.type === 'WQP_PRODMEMO_DELETE') {
         return respond(sendResponse, deleteProdMemoCache(msg.alphaId));
+    }
+    if (msg.type === 'WQP_PRODMEMO_DB') {
+        return respond(sendResponse, runProdMemoAction(msg.action, msg.payload || {}));
     }
     if (msg.type === 'WQP_LLM_CONFIG_GET') {
         return respond(sendResponse, getLlmConfig());

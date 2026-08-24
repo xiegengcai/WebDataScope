@@ -5,7 +5,8 @@
     window.__WQP_ALPHA_DESCRIPTION_ASSISTANT__ = true;
 
     const CONTROL_CLASS = 'wqp-alpha-description-ai';
-    const ALPHA_URL_PATTERN = /\/alpha\/([^/?#]+)/i;
+    const ALPHA_URL_PATTERN = /\/alphas?\/([^/?#]+)/i;
+    const RESERVED_ALPHA_PATHS = new Set(['unsubmitted', 'submitted', 'distribution']);
     const MAX_FIELDS = 12;
     const FIELD_FETCH_CONCURRENCY = 4;
     const IGNORED_TOKENS = new Set([
@@ -15,10 +16,29 @@
 
     let renderTimer = null;
     let lastUrl = location.href;
+    let observedAlphaId = '';
+
+    function normalizeAlphaId(value) {
+        const alphaId = String(value || '').trim();
+        return alphaId && !RESERVED_ALPHA_PATHS.has(alphaId.toLowerCase()) ? alphaId : '';
+    }
+
+    function getAlphaIdFromUrl(value = location.href) {
+        try {
+            const match = new URL(value, location.origin).pathname.match(ALPHA_URL_PATTERN);
+            return normalizeAlphaId(match?.[1]);
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function getAlphaIdFromDialog() {
+        const link = document.querySelector('[role="dialog"] a[href*="/alpha"]');
+        return getAlphaIdFromUrl(link?.href || '');
+    }
 
     function getAlphaId() {
-        const match = location.pathname.match(ALPHA_URL_PATTERN);
-        return String(match?.[1] || '').trim();
+        return getAlphaIdFromUrl() || getAlphaIdFromDialog() || observedAlphaId;
     }
 
     function isVisible(element) {
@@ -500,11 +520,20 @@
         setInterval(() => {
             if (location.href !== lastUrl) {
                 lastUrl = location.href;
+                observedAlphaId = getAlphaIdFromUrl(lastUrl);
                 scheduleControls(250);
             }
         }, 800);
         scheduleControls(0);
     }
+
+    window.addEventListener('message', (event) => {
+        if (event.source !== window || event.data?.type !== 'WQP_PRODMEMO_ALPHA_VIEW') return;
+        const alphaId = normalizeAlphaId(event.data.alphaId);
+        if (!alphaId) return;
+        observedAlphaId = alphaId;
+        scheduleControls(0);
+    });
 
     if (document.documentElement) startObserver();
     else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
