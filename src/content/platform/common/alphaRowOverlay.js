@@ -50,8 +50,9 @@
     function renderBookSize(cell, checks) {
         const wqppys = checks.WQPPYS || '-';
         const raw = checks.maxProdCorr;
-        const prodCorrNum = raw !== null && raw !== undefined && raw !== '' ? Number(raw) : NaN;
-        const prodCorr = Number.isFinite(prodCorrNum) ? (Math.trunc(prodCorrNum * 100) / 100).toString() : '';
+        const numMatch = raw ? String(raw).match(/-?\d+\.?\d*/) : null;
+        const prodCorrNum = numMatch ? Number(numMatch[0]) : NaN;
+        const prodCorr = Number.isFinite(prodCorrNum) ? prodCorrNum.toString() : '';
         const color = prodCorrColor(prodCorr);
         if (wqppys == '-' ) {
             cell.innerHTML = `<span style="color:${color};font-weight:600;">${prodCorr}</span>`;
