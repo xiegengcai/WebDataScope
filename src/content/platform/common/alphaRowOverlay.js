@@ -56,6 +56,9 @@
         const color = prodCorrColor(prodCorr);
         if (wqppys == '-' ) {
             cell.innerHTML = `<span style="color:${color};font-weight:600;">${prodCorr}</span>`;
+            // 切回无 overlay 分支时，必须清除上一次 overlay 残留的定位样式（回收行复用）
+            cell.style.position = '';
+            cell.style.textAlign = '';
         } else {
             const pyramidCount = wqppys.split('/').filter(Boolean).length;
             const overlay = `${pyramidCount ? pyramidCount + ' / ' : ''}${prodCorr}`;
@@ -63,35 +66,65 @@
             cell.style.position = 'relative';
             cell.style.textAlign = 'left';
         }
-        
+
+    }
+
+    // 首次渲染前快照注入点的原始 innerHTML，供 clearRowBadges 还原，避免回收行残留旧 badge
+    function snapshotOrig(el) {
+        if (el && el.dataset.wqpOrig === undefined) el.dataset.wqpOrig = el.innerHTML;
+    }
+
+    // 清除某行已注入的 badge 内容（checks 缺失或 alphaId 变更时调用）
+    function clearRowBadges(row) {
+        const codeBtn = row.querySelector('.alphas-list-table__clickable-icon.code-btn');
+        if (codeBtn) codeBtn.innerHTML = codeBtn.dataset.wqpOrig || '';
+        const compareEl = row.querySelector('.alpha-list-table__container--add-to-compare');
+        if (compareEl) compareEl.innerHTML = compareEl.dataset.wqpOrig || '';
+        const starEl = row.querySelector('.alphas-list-table__clickable-icon.star');
+        if (starEl) starEl.innerHTML = starEl.dataset.wqpOrig || '';
+        const bookSizeCell = row.querySelector('.alphas-list-table__cell-content--bookSize');
+        if (bookSizeCell) {
+            bookSizeCell.innerHTML = bookSizeCell.dataset.wqpOrig || '';
+            bookSizeCell.style.position = '';
+            bookSizeCell.style.textAlign = '';
+        }
     }
 
     function processRow(row) {
-        if (row.dataset.wqpRowDone) return;
-
         const idEl = row.querySelector('.alpha-id-cell__value');
         if (!idEl) return;
         const alphaId = idEl.textContent?.trim();
         if (!alphaId) return;
 
+        // 关键修复：用 wqpRowId 把 badge 绑定到具体 alphaId。
+        // 已为该 alphaId 渲染过 → 跳过；React 回收行若换了 alphaId，wqpRowId 不匹配会落空并强制重绘，
+        // 从根本上消除「同一 DOM 行节点复用但 badge 不更新」的错乱。
+        if (row.dataset.wqpRowDone && row.dataset.wqpRowId === alphaId) return;
+
         const checks = window.__wqp_alpha_checks?.get(alphaId);
-        if (checks === undefined) return;
+        if (checks === undefined) {
+            // 数据未到位：清掉可能残留的旧 badge（上一页），挂“待处理”等待补渲染
+            clearRowBadges(row);
+            row.dataset.wqpRowId = alphaId;
+            return;
+        }
 
         row.dataset.wqpRowDone = '1';
+        row.dataset.wqpRowId = alphaId;
 
         const codeBtn = row.querySelector('.alphas-list-table__clickable-icon.code-btn');
-        if (codeBtn) renderCheckBadge(codeBtn, checks);
+        if (codeBtn) { snapshotOrig(codeBtn); renderCheckBadge(codeBtn, checks); }
 
         if (isRegular(checks)) {
             const compareEl = row.querySelector('.alpha-list-table__container--add-to-compare');
-            if (compareEl && checks.pyramidMultiplier != null) renderPyramidBadge(compareEl, checks.pyramidMultiplier);
+            if (compareEl && checks.pyramidMultiplier != null) { snapshotOrig(compareEl); renderPyramidBadge(compareEl, checks.pyramidMultiplier); }
 
             const starEl = row.querySelector('.alphas-list-table__clickable-icon.star');
-            if (starEl && checks.operatorCount != null) renderOperatorBadge(starEl, checks.operatorCount);
+            if (starEl && checks.operatorCount != null) { snapshotOrig(starEl); renderOperatorBadge(starEl, checks.operatorCount); }
         }
 
         const bookSizeCell = row.querySelector('.alphas-list-table__cell-content--bookSize');
-        if (bookSizeCell) renderBookSize(bookSizeCell, checks);
+        if (bookSizeCell) { snapshotOrig(bookSizeCell); renderBookSize(bookSizeCell, checks); }
     }
 
     function scanAll() {
@@ -125,7 +158,7 @@
             const checks = window.__wqp_alpha_checks?.get(alphaId);
             if (checks === undefined) return;
             const bookSizeCell = row.querySelector('.alphas-list-table__cell-content--bookSize');
-            if (bookSizeCell) renderBookSize(bookSizeCell, checks);
+            if (bookSizeCell) { snapshotOrig(bookSizeCell); renderBookSize(bookSizeCell, checks); }
         });
     }
 
