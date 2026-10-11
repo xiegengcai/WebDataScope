@@ -131,18 +131,30 @@
         document.querySelectorAll('.rt-tr-group:not([data-wqp-row-done])').forEach(processRow);
     }
 
+    let stableScanTimer = null;
+
     function onDataUpdated() {
         // 数据已更新：清除所有已处理标记，重新扫描
-        document.querySelectorAll('[data-wqp-row-done]').forEach(el => { delete el.dataset.wqpRowDone; });
+        document.querySelectorAll('[data-wqp-row-done]').forEach(el => {
+            delete el.dataset.wqpRowDone;
+            delete el.dataset.wqpRowId;
+        });
+
+        if (stableScanTimer) {
+            clearInterval(stableScanTimer);
+            stableScanTimer = null;
+        }
+
         scanAll();
         // 兜底轮询：捕获 React 异步渲染的延迟 rows
         // Map 干净后，不存在 "alphaId 找不到导致 done 永远不设" 的死循环，1.2s 足够
         let attempts = 0;
-        const stable = setInterval(() => {
+        stableScanTimer = setInterval(() => {
             const pending = document.querySelectorAll('.rt-tr-group:not([data-wqp-row-done])').length;
             attempts++;
             if (pending === 0 || attempts >= 6) {
-                clearInterval(stable);
+                clearInterval(stableScanTimer);
+                stableScanTimer = null;
                 if (pending > 0) console.warn(`[WQP] ${pending} 行未在 1.2s 内处理`);
                 return;
             }
