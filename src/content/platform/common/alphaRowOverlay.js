@@ -49,8 +49,8 @@
 
     function renderBookSize(cell, checks) {
         const wqppys = checks.WQPPYS || '-';
-        const raw = checks.maxProdCorr;
-        const numMatch = raw ? String(raw).match(/-?\d+\.?\d*/) : null;
+        const raw = checks.prodCorrelation;
+        const numMatch = raw !== '' && raw != null ? String(raw).match(/-?\d+\.?\d*/) : null;
         const prodCorrNum = numMatch ? Number(numMatch[0]) : NaN;
         const prodCorr = Number.isFinite(prodCorrNum) ? prodCorrNum.toString() : '';
         const color = prodCorrColor(prodCorr);
@@ -131,7 +131,14 @@
         document.querySelectorAll('.rt-tr-group:not([data-wqp-row-done])').forEach(processRow);
     }
 
+    const ALPHA_LIST_PATH = /^\/alphas\/(?:submitted|unsubmitted)\/?$/;
     let stableScanTimer = null;
+    let debounceTimer = null;
+    let observer = null;
+
+    function isAlphaListPage() {
+        return ALPHA_LIST_PATH.test(window.location.pathname);
+    }
 
     function onDataUpdated() {
         // 数据已更新：清除所有已处理标记，重新扫描
@@ -175,9 +182,15 @@
     }
 
     function start() {
+        if (observer || !document.body || !isAlphaListPage()) return;
+
+        document.querySelectorAll('[data-wqp-row-done]').forEach(row => {
+            delete row.dataset.wqpRowDone;
+            delete row.dataset.wqpRowId;
+        });
+
         // 防抖：合并短时间内多次 DOM 变化，避免高频回调（如虚拟滚动、tooltip、loading 动画）
-        let debounceTimer = null;
-        const observer = new MutationObserver((mutations) => {
+        observer = new MutationObserver((mutations) => {
             // 触发条件：addedNodes 含 .rt-tr-group（行新增），或任意 mutation 触及行内节点
             const relevant = mutations.some(m => {
                 if ([...m.addedNodes].some(n =>
@@ -208,17 +221,50 @@
             characterData: true,
             attributes: false
         });
+        window.addEventListener('__wqp_alpha_checks_updated', onDataUpdated);
+        window.addEventListener('storage', onStorageUpdated);
         scanAll();
     }
 
-    if (document.body) {
-        start();
-    } else {
-        document.addEventListener('DOMContentLoaded', start);
+    function stop() {
+        if (observer) {
+            observer.disconnect();
+            observer = null;
+        }
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+            debounceTimer = null;
+        }
+        if (stableScanTimer) {
+            clearInterval(stableScanTimer);
+            stableScanTimer = null;
+        }
+        window.removeEventListener('__wqp_alpha_checks_updated', onDataUpdated);
+        window.removeEventListener('storage', onStorageUpdated);
     }
 
-    window.addEventListener('__wqp_alpha_checks_updated', onDataUpdated);
-    window.addEventListener('storage', (e) => {
+    function onStorageUpdated(e) {
         if (e.key === 'WQP_ProdMemoCache') refreshBookSize();
+    }
+
+    function syncRoute() {
+        if (isAlphaListPage()) start();
+        else stop();
+    }
+
+    ['pushState', 'replaceState'].forEach(method => {
+        const original = window.history[method];
+        window.history[method] = function (...args) {
+            const result = original.apply(this, args);
+            syncRoute();
+            return result;
+        };
     });
+    window.addEventListener('popstate', syncRoute);
+
+    if (document.body) {
+        syncRoute();
+    } else {
+        document.addEventListener('DOMContentLoaded', syncRoute, { once: true });
+    }
 })();

@@ -458,7 +458,7 @@ function injectFetchInterceptor(tabId) {
                             modifiedData.results.forEach(item => {
                                 if (item.id) {
                                     window.__wqp_alpha_checks.set(item.id, {
-                                        maxProdCorr: item.maxProdCorr ?? '',
+                                        prodCorrelation: item.is?.prodCorrelation ?? item.maxProdCorr ?? '',
                                         maxPoolProdCorr: item.maxPoolProdCorr ?? '',
                                         maxSelfCorr: item.maxSelfCorr ?? '',
                                         failedNum: item.is?.failedNum ?? 0,
