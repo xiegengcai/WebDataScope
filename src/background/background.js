@@ -314,6 +314,15 @@ function injectFetchInterceptor(tabId) {
                     return formatMemoValue(memo?.self);
                 }
 
+                function getMinimumMultiplier(items) {
+                    if (!Array.isArray(items)) return null;
+                    return items.reduce((minimum, item) => {
+                        const multiplier = item?.multiplier;
+                        if (!Number.isFinite(multiplier)) return minimum;
+                        return minimum === null ? multiplier : Math.min(minimum, multiplier);
+                    }, null);
+                }
+
                 // 1. 定义需要校验的RA检查项名称（自动去重，避免重复统计）
                 const RA_CHECK_NAMES = Array.from(new Set([
                     "HIGH_TURNOVER", "LOW_TURNOVER",
@@ -371,8 +380,12 @@ function injectFetchInterceptor(tabId) {
                     item.is.WQPPYS = pyramidCheck?.pyramids
                         ?.map(pyramid => (pyramid.name?.split('/').pop() || '').toLowerCase())
                         ?.join('/') || '';
-                    // 从 MATCHES_PYRAMID check 提取 pyramid multiplier（顶层 multiplier 字段）
-                    item.pyramidMultiplier = item.is.checks.find(check => check.name === "MATCHES_PYRAMID")?.multiplier ?? null;
+                    const themesCheck = item.is.checks.find(check =>
+                        check.name === "MATCHES_THEMES" && check.result === "PASS"
+                    );
+                    item.pyramidMultiplier = themesCheck
+                        ? themesCheck.multiplier ?? getMinimumMultiplier(themesCheck.themes)
+                        : getMinimumMultiplier(pyramidCheck?.pyramids);
                 });
                 return originalData;
             }
